@@ -1,0 +1,25 @@
+project: NFTutorial_Moon_v0.0
+device: cuda:0
+net: model.NormalizingFlow
+optimizer: torch.optim.adamw.AdamW
+optimizer: splus.SPlus
+scheduler: hyperbolic_lr.ExpHyperbolicLR
+epochs: 10
+batch_size: 128
+seeds: [89, 231, 928]
+net_config:
+  input_dim: 2
+  hidden_dim: 64
+  num_layers: 8
+optimizer_config:
+  lr: 1.e-3 # Must contain dot for float
+  eps: 1.e-10
+scheduler_config:
+  upper_bound: 300
+  max_iter: 150
+  infimum_lr: 1.e-6
+early_stopping_config:
+  enabled: false
+  patience: 10
+  mode: min # 'min' or 'max'
+  min_delta: 0.0001 # Percent

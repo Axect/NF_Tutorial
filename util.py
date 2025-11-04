@@ -6,6 +6,7 @@ import beaupy
 from rich.console import Console
 import wandb
 import optuna
+from sklearn.datasets import make_moons
 
 from config import RunConfig
 
@@ -15,35 +16,14 @@ import math
 from math import pi
 
 
+# 2D Moon shape dataset
 def load_data(n=10000, split_ratio=0.8, seed=42):
-    # Fix random seed for reproducibility
-    torch.manual_seed(seed)
-
-    x_noise = torch.rand(n) * 0.02
-    x = torch.linspace(0, 1, n) + x_noise
-    x = x.clamp(0, 1) # Fix x to be in [0, 1]
-
-    noise_level = 0.05
-    y = (
-        1.0 * torch.sin(4 * pi * x)
-        + 0.5 * torch.sin(10 * pi * x)
-        + 1.5 * (x**2)
-        + torch.randn(n) * noise_level
-    )
-
-    x = x.view(-1, 1)
-    y = y.view(-1, 1)
-
-    full_dataset = TensorDataset(x, y)
-
-    train_size = int(n * split_ratio)
+    data, _ = make_moons(n_samples=n, noise=0.05, random_state=seed)
+    data = torch.tensor(data, dtype=torch.float32)
+    dataset = TensorDataset(data)
+    train_size = int(split_ratio * n)
     val_size = n - train_size
-
-    generator = torch.Generator().manual_seed(seed)
-    train_dataset, val_dataset = random_split(
-        full_dataset, [train_size, val_size], generator=generator
-    )
-
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
     return train_dataset, val_dataset
 
 
@@ -154,15 +134,17 @@ class Trainer:
     def train_epoch(self, dl_train):
         self.model.train()
         # ScheduleFree Optimizer or SPlus
-        if any(keyword in self.optimizer.__class__.__name__ for keyword in ["ScheduleFree", "SPlus"]):
+        if any(
+            keyword in self.optimizer.__class__.__name__
+            for keyword in ["ScheduleFree", "SPlus"]
+        ):
             self.optimizer.train()
         train_loss = 0
         total_size = 0
-        for x, y in dl_train:
+        for batch in dl_train:
+            x, = batch  # Unpack tuple from TensorDataset
             x = x.to(self.device)
-            y = y.to(self.device)
-            y_pred = self.step(x)
-            loss = self.criterion(y_pred, y)
+            loss = self.model(x)
             train_loss += loss.item() * x.shape[0]
             total_size += x.shape[0]
             self.optimizer.zero_grad()
@@ -174,15 +156,17 @@ class Trainer:
     def val_epoch(self, dl_val):
         self.model.eval()
         # ScheduleFree Optimizer or SPlus
-        if any(keyword in self.optimizer.__class__.__name__ for keyword in ["ScheduleFree", "SPlus"]):
+        if any(
+            keyword in self.optimizer.__class__.__name__
+            for keyword in ["ScheduleFree", "SPlus"]
+        ):
             self.optimizer.eval()
         val_loss = 0
         total_size = 0
-        for x, y in dl_val:
+        for batch in dl_val:
+            x, = batch  # Unpack tuple from TensorDataset
             x = x.to(self.device)
-            y = y.to(self.device)
-            y_pred = self.step(x)
-            loss = self.criterion(y_pred, y)
+            loss = self.model(x)
             val_loss += loss.item() * x.shape[0]
             total_size += x.shape[0]
         val_loss /= total_size
