@@ -99,7 +99,7 @@ class CouplingLayer(nn.Module):
 
 
 class NormalizingFlow(nn.Module):
-    def __init__(self, hparams, device='cpu'):
+    def __init__(self, hparams, device="cpu"):
         super().__init__()
 
         self.input_dim = hparams["input_dim"]

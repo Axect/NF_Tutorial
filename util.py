@@ -142,7 +142,7 @@ class Trainer:
         train_loss = 0
         total_size = 0
         for batch in dl_train:
-            x, = batch  # Unpack tuple from TensorDataset
+            (x,) = batch  # Unpack tuple from TensorDataset
             x = x.to(self.device)
             loss = self.model(x)
             train_loss += loss.item() * x.shape[0]
@@ -164,7 +164,7 @@ class Trainer:
         val_loss = 0
         total_size = 0
         for batch in dl_val:
-            x, = batch  # Unpack tuple from TensorDataset
+            (x,) = batch  # Unpack tuple from TensorDataset
             x = x.to(self.device)
             loss = self.model(x)
             val_loss += loss.item() * x.shape[0]
